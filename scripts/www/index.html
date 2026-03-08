@@ -1,11 +1,578 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AirGap 热端钱包</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 20px;
+        }
+        .container {
+            padding: 20px;
+        }
+        .wallet-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .wallet-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .protocol-icon {
+            font-size: 32px;
+            margin-right: 12px;
+        }
+        .protocol-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .balance {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin: 12px 0;
+        }
+        .balance span {
+            font-size: 16px;
+            color: #666;
+        }
+        .address {
+            font-size: 12px;
+            color: #999;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn-outline {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .hidden {
+            display: none;
+        }
+        .protocol-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .protocol-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .protocol-item.selected {
+            border-color: #667eea;
+            background: #f5f3ff;
+        }
+        .protocol-item .icon {
+            font-size: 32px;
+        }
+        .protocol-item .name {
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .qr-container {
+            text-align: center;
+            padding: 20px;
+        }
+        .qr-container img {
+            max-width: 280px;
+            border: 4px solid #667eea;
+            border-radius: 12px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+        .footer-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .footer-btn .icon {
+            font-size: 24px;
+        }
+        .action-btns {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .action-btns button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-send { background: #ffebee; color: #f44336; }
+        .btn-receive { background: #e8f5e9; color: #4caf50; }
+        .btn-sync { background: #e3f2fd; color: #2196f3; }
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AirGap 热端钱包</h1>
+    </div>
+
+    <div class="container" id="mainView">
+        <!-- 钱包列表 -->
+        <div id="walletList"></div>
+        
+        <!-- 空状态 -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">🔐</div>
+            <h2>还没有钱包</h2>
+            <p>点击下方按钮添加钱包</p>
+        </div>
+
+        <!-- 添加按钮 -->
+        <div style="text-align: center; margin-top: 20px;" id="addBtn">
+            <button class="btn" onclick="showAddWallet()">+ 添加钱包</button>
+        </div>
+    </div>
+
+    <!-- 添加钱包弹窗 -->
+    <div class="modal hidden" id="addWalletModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">添加钱包</h2>
+            <p style="margin-bottom: 16px; color: #666;">选择协议：</p>
+            <div class="protocol-list">
+                <div class="protocol-item selected" onclick="selectProtocol('BTC', this)">
+                    <div class="icon">₿</div>
+                    <div class="name">Bitcoin</div>
+                </div>
+                <div class="protocol-item" onclick="selectProtocol('ETH', this)">
+                    <div class="icon">Ξ</div>
+                    <div class="name">Ethereum</div>
+                </div>
+                <div class="protocol-item" onclick="selectProtocol('XTZ', this)">
+                    <div class="icon">ꜩ</div>
+                    <div class="name">Tezos</div>
+                </div>
+                <div class="protocol-item" onclick="selectProtocol('DOT', this)">
+                    <div class="icon">●</div>
+                    <div class="name">Polkadot</div>
+                </div>
+            </div>
+            <div class="action-btns">
+                <button class="btn" onclick="addWallet()">确认添加</button>
+                <button class="btn btn-outline" onclick="closeModal('addWalletModal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 收款弹窗 -->
+    <div class="modal hidden" id="receiveModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">收款</h2>
+            <div class="qr-container">
+                <img id="receiveQR" src="" alt="QR Code">
+            </div>
+            <p style="text-align: center; margin: 16px 0; color: #666;">钱包地址：</p>
+            <div class="wallet-card">
+                <code id="receiveAddress" style="word-break: break-all; font-size: 12px;"></code>
+            </div>
+            <button class="btn" style="width: 100%;" onclick="copyAddress()">复制地址</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="closeModal('receiveModal')">关闭</button>
+        </div>
+    </div>
+
+    <!-- 同步弹窗 -->
+    <div class="modal hidden" id="syncModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">同步钱包</h2>
+            <p style="color: #666; margin-bottom: 16px;">请使用冷端钱包扫描下方二维码获取公钥和地址，然后在此输入：</p>
+            <div class="form-group">
+                <label>公钥 (Public Key)</label>
+                <input type="text" id="syncPublicKey" placeholder="输入公钥">
+            </div>
+            <div class="form-group">
+                <label>地址 (Address)</label>
+                <input type="text" id="syncAddress" placeholder="输入地址">
+            </div>
+            <button class="btn" style="width: 100%;" onclick="doSync()">同步</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="closeModal('syncModal')">取消</button>
+        </div>
+    </div>
+
+    <!-- 发送弹窗 -->
+    <div class="modal hidden" id="sendModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">发送</h2>
+            <div class="form-group">
+                <label>收款地址</label>
+                <input type="text" id="sendTo" placeholder="输入收款地址">
+            </div>
+            <div class="form-group">
+                <label>金额</label>
+                <input type="number" id="sendAmount" placeholder="0.00">
+            </div>
+            <button class="btn" style="width: 100%;" onclick="generateQRCode()">生成二维码</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="closeModal('sendModal')">取消</button>
+        </div>
+    </div>
+
+    <!-- 二维码弹窗 -->
+    <div class="modal hidden" id="qrModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">请冷端扫描</h2>
+            <div class="qr-container">
+                <img id="txQR" src="" alt="Transaction QR">
+            </div>
+            <p style="color: #666; text-align: center;">扫描后冷端会返回签名数据</p>
+            <div class="form-group" style="margin-top: 16px;">
+                <label>导入签名数据</label>
+                <input type="text" id="signedData" placeholder="粘贴签名数据">
+            </div>
+            <button class="btn" style="width: 100%;" onclick="broadcastTx()">广播交易</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="closeModal('qrModal')">取消</button>
+        </div>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+
+    <script>
+        // 钱包数据
+        let wallets = [];
+        let currentProtocol = 'BTC';
+        let currentWalletIndex = 0;
+
+        // 协议配置
+        const protocols = {
+            BTC: { icon: '₿', name: 'Bitcoin', symbol: 'BTC' },
+            ETH: { icon: 'Ξ', name: 'Ethereum', symbol: 'ETH' },
+            XTZ: { icon: 'ꜩ', name: 'Tezos', symbol: 'XTZ' },
+            DOT: { icon: '●', name: 'Polkadot', symbol: 'DOT' }
+        };
+
+        // 从本地存储加载
+        function loadWallets() {
+            const data = localStorage.getItem('airgap_wallets');
+            if (data) {
+                wallets = JSON.parse(data);
+            }
+            renderWallets();
+        }
+
+        // 保存到本地存储
+        function saveWallets() {
+            localStorage.setItem('airgap_wallets', JSON.stringify(wallets));
+        }
+
+        // 渲染钱包列表
+        function renderWallets() {
+            const listEl = document.getElementById('walletList');
+            const emptyEl = document.getElementById('emptyState');
+            const addEl = document.getElementById('addBtn');
+
+            if (wallets.length === 0) {
+                listEl.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                addEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            
+            listEl.innerHTML = wallets.map((w, i) => `
+                <div class="wallet-card" onclick="showWalletDetail(${i})">
+                    <div class="wallet-header">
+                        <span class="protocol-icon">${protocols[w.protocol]?.icon || '●'}</span>
+                        <span class="protocol-name">${protocols[w.protocol]?.name || w.protocol}</span>
+                    </div>
+                    <div class="balance">
+                        ${w.balance || '0.00'} <span>${protocols[w.protocol]?.symbol || w.protocol}</span>
+                    </div>
+                    <div class="address">${w.address || '未同步 - 点击同步'}</div>
+                </div>
+            `).join('');
+        }
+
+        // 显示添加钱包弹窗
+        function showAddWallet() {
+            document.getElementById('addWalletModal').classList.remove('hidden');
+        }
+
+        // 选择协议
+        function selectProtocol(protocol, el) {
+            document.querySelectorAll('.protocol-item').forEach(item => item.classList.remove('selected'));
+            el.classList.add('selected');
+            currentProtocol = protocol;
+        }
+
+        // 添加钱包
+        function addWallet() {
+            const wallet = {
+                id: Date.now(),
+                protocol: currentProtocol,
+                address: '',
+                publicKey: '',
+                balance: '0.00'
+            };
+            wallets.push(wallet);
+            saveWallets();
+            renderWallets();
+            closeModal('addWalletModal');
+            showToast('钱包已添加，请同步');
+            // 自动显示同步弹窗
+            currentWalletIndex = wallets.length - 1;
+            showSyncModal();
+        }
+
+        // 显示同步弹窗
+        function showSyncModal() {
+            document.getElementById('syncModal').classList.remove('hidden');
+        }
+
+        // 执行同步
+        function doSync() {
+            const publicKey = document.getElementById('syncPublicKey').value;
+            const address = document.getElementById('syncAddress').value;
+
+            if (!publicKey || !address) {
+                showToast('请输入公钥和地址');
+                return;
+            }
+
+            wallets[currentWalletIndex].publicKey = publicKey;
+            wallets[currentWalletIndex].address = address;
+            saveWallets();
+            renderWallets();
+            closeModal('syncModal');
+            showToast('同步成功');
+        }
+
+        // 显示钱包详情
+        function showWalletDetail(index) {
+            currentWalletIndex = index;
+            const wallet = wallets[index];
+            
+            if (!wallet.address) {
+                showSyncModal();
+                return;
+            }
+
+            // 显示收款弹窗
+            document.getElementById('receiveAddress').textContent = wallet.address;
+            // 生成简单的二维码（使用API）
+            document.getElementById('receiveQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(wallet.address)}`;
+            document.getElementById('receiveModal').classList.remove('hidden');
+        }
+
+        // 复制地址
+        function copyAddress() {
+            const address = document.getElementById('receiveAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                showToast('地址已复制');
+            });
+        }
+
+        // 显示发送弹窗
+        function showSendModal() {
+            if (wallets.length === 0) {
+                showToast('请先添加钱包');
+                return;
+            }
+            currentWalletIndex = 0;
+            document.getElementById('sendModal').classList.remove('hidden');
+        }
+
+        // 生成交易二维码
+        function generateQRCode() {
+            const to = document.getElementById('sendTo').value;
+            const amount = document.getElementById('sendAmount').value;
+            const wallet = wallets[currentWalletIndex];
+
+            if (!to || !amount) {
+                showToast('请输入收款地址和金额');
+                return;
+            }
+
+            // 创建待签名交易数据
+            const txData = JSON.stringify({
+                type: 'transaction_sign_request',
+                protocol: wallet.protocol,
+                to: to,
+                amount: amount,
+                from: wallet.address,
+                timestamp: Date.now()
+            });
+
+            // Base64编码
+            const encoded = btoa(encodeURIComponent(txData));
+
+            // 显示二维码
+            document.getElementById('txQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(encoded)}`;
+            closeModal('sendModal');
+            document.getElementById('qrModal').classList.remove('hidden');
+            showToast('请使用冷端扫描二维码');
+        }
+
+        // 广播交易
+        function broadcastTx() {
+            showToast('广播功能需要完整的签名数据，此为演示版本');
+            closeModal('qrModal');
+        }
+
+        // 关闭弹窗
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // 显示提示
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 页面显示
+        function showReceive() {
+            if (wallets.length === 0) {
+                showToast('请先添加钱包');
+                return;
+            }
+            currentWalletIndex = 0;
+            showWalletDetail(0);
+        }
+
+        function showSync() {
+            if (wallets.length === 0) {
+                showToast('请先添加钱包');
+                return;
+            }
+            showSyncModal();
+        }
+
+        // 初始化
+        window.onload = function() {
+            loadWallets();
+        };
+    </script>
+</body>
 </html>
